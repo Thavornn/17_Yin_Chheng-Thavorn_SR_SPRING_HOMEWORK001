@@ -3,7 +3,7 @@ pipeline {
         kubernetes {
             label 'docker-agent'
             defaultContainer 'docker'
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
 spec:
@@ -14,18 +14,18 @@ spec:
         privileged: true
     - name: jnlp
       image: jenkins/inbound-agent:latest
-      args: ['\\$(JENKINS_SECRET)', '\\$(JENKINS_NAME)']
-"""
+      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+'''
         }
     }
 
     environment {
         DOCKERHUB_CRED = 'dockerhub-token' 
-        GITHUB_CRED = 'github-token'
-        DOCKER_REG = 'pinkmelon'
-        IMAGE_REPO = "${env.DOCKER_REG}/hw-spring-product"
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"
-        CD_BRANCH  = 'master'
+        GITHUB_CRED    = 'github-token'
+        DOCKER_REG     = 'pinkmelon'
+        IMAGE_REPO     = "${env.DOCKER_REG}/hw-spring-product"
+        IMAGE_TAG      = "${env.BUILD_NUMBER}"
+        CD_BRANCH      = 'master'
     }
 
     stages {
