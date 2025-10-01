@@ -14,12 +14,10 @@ pipeline {
         }
     stage('Run Tests') {
         steps {
-            sh 'chmod +x ./mvnw'
+            // Run Maven tests using Maven Wrapper
             sh './mvnw clean test'
         }
     }
-
-
 
         stage('Build Docker Image') {
             steps {
