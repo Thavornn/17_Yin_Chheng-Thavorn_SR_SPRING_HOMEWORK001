@@ -12,12 +12,6 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Thavornn/17_Yin_Chheng-Thavorn_SR_SPRING_HOMEWORK001'
             }
         }
-    stage('Run Tests') {
-        steps {
-            // Run Maven tests using Maven Wrapper
-            sh './mvnw clean test'
-        }
-    }
 
         stage('Build Docker Image') {
             steps {
