@@ -1,22 +1,17 @@
 pipeline {
     agent {
         kubernetes {
-            defaultContainer 'docker'
+            defaultContainer 'kaniko'
             yaml '''
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: docker
-      image: docker:24-dind
-      securityContext:
-        privileged: true
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
       command:
         - cat
       tty: true
-    - name: jnlp
-      image: jenkins/inbound-agent:latest
-      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
 '''
         }
     }
@@ -35,29 +30,15 @@ spec:
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Image') {
             steps {
-                container('docker') {
+                container('kaniko') {
                     sh """
-                        docker version
-                        docker build -t ${IMAGE_REPO}:${IMAGE_TAG} .
+                        /kaniko/executor --dockerfile=Dockerfile --context=dir://. \
+                        --destination=${IMAGE_REPO}:${IMAGE_TAG} \
+                        --destination=${IMAGE_REPO}:latest \
+                        --verbosity=info
                     """
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-token', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-                        sh """
-                            echo \$DH_PASS | docker login -u \$DH_USER --password-stdin
-                            docker push ${IMAGE_REPO}:${IMAGE_TAG}
-                            docker tag ${IMAGE_REPO}:${IMAGE_TAG} ${IMAGE_REPO}:latest
-                            docker push ${IMAGE_REPO}:latest
-                            docker logout
-                        """
-                    }
                 }
             }
         }
