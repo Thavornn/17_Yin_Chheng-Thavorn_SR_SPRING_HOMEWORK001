@@ -9,9 +9,9 @@ spec:
   containers:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
-      command:
-        - cat
-      tty: true
+    - name: jnlp
+      image: jenkins/inbound-agent:latest
+      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
 '''
         }
     }
@@ -30,7 +30,7 @@ spec:
             }
         }
 
-        stage('Build & Push Image') {
+        stage('Build & Push Docker Image') {
             steps {
                 container('kaniko') {
                     sh """
