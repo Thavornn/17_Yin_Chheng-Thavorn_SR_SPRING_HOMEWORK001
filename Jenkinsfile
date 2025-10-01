@@ -12,9 +12,6 @@ spec:
       image: docker:24-dind
       securityContext:
         privileged: true
-    - name: jnlp
-      image: jenkins/inbound-agent:latest
-      args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
 '''
         }
     }
