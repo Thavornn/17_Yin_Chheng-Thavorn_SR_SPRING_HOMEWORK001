@@ -3,22 +3,16 @@ pipeline {
         kubernetes {
             inheritFrom 'kaniko-pod'
             defaultContainer 'kaniko'
-            yaml """
+            yaml '''
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
-      args: ["--dockerfile=Dockerfile", "--context=/workspace"]
-      volumeMounts:
-        - name: kaniko-secret
-          mountPath: /kaniko/.docker
-  volumes:
-    - name: kaniko-secret
-      secret:
-        secretName: dockerhub-config
-"""
+    - name: docker
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+'''
         }
     }
 
@@ -40,16 +34,18 @@ spec:
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Push Docker Image') {
             steps {
-                container('kaniko') {
-                    sh """
-                    /kaniko/executor \
-                        --dockerfile=Dockerfile \
-                        --context=\$PWD \
-                        --destination=${IMAGE_REPO}:${IMAGE_TAG} \
-                        --destination=${IMAGE_REPO}:latest
-                    """
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-token', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                        sh """
+                            echo \$DH_PASS | docker login -u \$DH_USER --password-stdin
+                            docker push ${IMAGE_REPO}:${IMAGE_TAG}
+                            docker tag ${IMAGE_REPO}:${IMAGE_TAG} ${IMAGE_REPO}:latest
+                            docker push ${IMAGE_REPO}:latest
+                            docker logout
+                        """
+                    }
                 }
             }
         }
