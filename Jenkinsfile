@@ -9,12 +9,20 @@ kind: Pod
 spec:
   containers:
     - name: docker
-      image: docker:24-dind
-      securityContext:
-        privileged: true
+      image: docker:24
+      command:
+        - cat
+      tty: true
+      volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
     - name: jnlp
       image: jenkins/inbound-agent:latest
       args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+  volumes:
+    - name: docker-sock
+      hostPath:
+        path: /var/run/docker.sock
 '''
         }
     }
@@ -37,6 +45,7 @@ spec:
             steps {
                 container('docker') {
                     sh """
+                        docker version
                         docker build -t ${IMAGE_REPO}:${IMAGE_TAG} .
                     """
                 }
