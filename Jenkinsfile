@@ -68,7 +68,7 @@ spec:
             echo '✅ Build & Push completed successfully!'
         }
         failure {
-            echo ' Pipeline failed.'
+            echo 'tukata Pipeline failed.'
         }
     }
 }
