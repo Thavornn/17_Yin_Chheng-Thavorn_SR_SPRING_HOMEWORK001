@@ -67,7 +67,7 @@ spec:
             echo '✅ Build & Push completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed.'
+            echo ' Pipeline failed.'
         }
     }
 }
