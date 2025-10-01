@@ -1,18 +1,24 @@
 pipeline {
     agent {
         kubernetes {
-            label 'docker-agent'
-            defaultContainer 'docker'
-            yaml '''
+            label 'kaniko-agent'
+            defaultContainer 'kaniko'
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
   containers:
-    - name: docker
-      image: docker:24-dind
-      securityContext:
-        privileged: true
-'''
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      args: ["--dockerfile=Dockerfile", "--context=/workspace"]
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: dockerhub-config
+"""
         }
     }
 
@@ -21,12 +27,10 @@ spec:
     }
 
     environment {
-        DOCKERHUB_CRED = 'dockerhub-token' 
-        GITHUB_CRED    = 'github-token'
-        DOCKER_REG     = 'pinkmelon'
-        IMAGE_REPO     = "${env.DOCKER_REG}/hw-spring-product"
-        IMAGE_TAG      = "${env.BUILD_NUMBER}"
-        CD_BRANCH      = 'master'
+        DOCKER_REG  = 'pinkmelon'
+        IMAGE_REPO  = "${env.DOCKER_REG}/hw-spring-product"
+        IMAGE_TAG   = "${env.BUILD_NUMBER}"
+        CD_BRANCH   = 'master'
     }
 
     stages {
@@ -36,28 +40,16 @@ spec:
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Docker Image') {
             steps {
-                container('docker') {
+                container('kaniko') {
                     sh """
-                        docker build -t ${IMAGE_REPO}:${IMAGE_TAG} .
+                    /kaniko/executor \
+                        --dockerfile=Dockerfile \
+                        --context=\$PWD \
+                        --destination=${IMAGE_REPO}:${IMAGE_TAG} \
+                        --destination=${IMAGE_REPO}:latest
                     """
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-token', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-                        sh """
-                            echo \$DH_PASS | docker login -u \$DH_USER --password-stdin
-                            docker push ${IMAGE_REPO}:${IMAGE_TAG}
-                            docker tag ${IMAGE_REPO}:${IMAGE_TAG} ${IMAGE_REPO}:latest
-                            docker push ${IMAGE_REPO}:latest
-                            docker logout
-                        """
-                    }
                 }
             }
         }
@@ -68,7 +60,7 @@ spec:
             echo '✅ Build & Push completed successfully!'
         }
         failure {
-            echo 'tukata Pipeline failed.'
+            echo '❌ Pipeline failed.'
         }
     }
 }
