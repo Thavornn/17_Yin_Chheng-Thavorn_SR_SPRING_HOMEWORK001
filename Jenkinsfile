@@ -1,9 +1,9 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'kaniko-pod'
-            defaultContainer 'kaniko'
-            yaml '''
+            label 'docker-agent'
+            defaultContainer 'docker'
+            yaml """
 apiVersion: v1
 kind: Pod
 spec:
@@ -12,25 +12,34 @@ spec:
       image: docker:24-dind
       securityContext:
         privileged: true
-'''
+    - name: jnlp
+      image: jenkins/inbound-agent:latest
+      args: ['\\$(JENKINS_SECRET)', '\\$(JENKINS_NAME)']
+"""
         }
     }
 
-    triggers {
-        githubPush()
-    }
-
     environment {
-        DOCKER_REG  = 'pinkmelon'
-        IMAGE_REPO  = "${env.DOCKER_REG}/hw-spring-product"
-        IMAGE_TAG   = "${env.BUILD_NUMBER}"
-        CD_BRANCH   = 'master'
+        DOCKER_REG = 'pinkmelon'
+        IMAGE_REPO = "${env.DOCKER_REG}/hw-spring-product"
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        CD_BRANCH  = 'master'
     }
 
     stages {
         stage('Checkout Source') {
             steps {
                 git branch: "${CD_BRANCH}", url: 'https://github.com/Thavornn/17_Yin_Chheng-Thavorn_SR_SPRING_HOMEWORK001', credentialsId: 'github-token'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    sh """
+                        docker build -t ${IMAGE_REPO}:${IMAGE_TAG} .
+                    """
+                }
             }
         }
 
