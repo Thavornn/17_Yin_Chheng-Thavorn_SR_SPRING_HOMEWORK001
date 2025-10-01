@@ -16,6 +16,10 @@ spec:
         }
     }
 
+    triggers {
+        githubPush()
+    }
+
     environment {
         DOCKERHUB_CRED = 'dockerhub-token' 
         GITHUB_CRED    = 'github-token'
