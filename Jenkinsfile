@@ -16,7 +16,7 @@ pipeline {
 stage('Run Tests') {
     steps {
         // Run Maven tests
-        sh './mvnw clean test'
+        sh './mvn clean test'
     }
 }
 
